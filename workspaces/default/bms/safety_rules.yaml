@@ -1,0 +1,36 @@
+# Safety rules template — copy to bms/safety_rules.yaml and customize thresholds.
+#
+# Required fields per rule: id, condition, action
+# Optional: component (mcu | memory), description
+#
+# Link component: mcu so the Diagram inspector shows rules when MCU is selected.
+
+- id: thermal_fan_on
+  condition: "pack_temp_c > 75"
+  action: "cooling.fan = ON"
+  component: mcu
+  description: Enable cooling fan when pack temperature exceeds 75°C
+
+- id: thermal_contactor_open
+  condition: "pack_temp_c > 85"
+  action: "contactor.open()"
+  component: mcu
+  description: Open contactor when pack temperature exceeds 85°C
+
+- id: cell_overvoltage
+  condition: "any(cell_voltage_v > 4.25)"
+  action: "fault(OVERVOLTAGE); contactor.open()"
+  component: mcu
+  description: Cell overvoltage protection at 4.25V per cell
+
+- id: cell_undervoltage
+  condition: "any(cell_voltage_v < 2.50)"
+  action: "fault(UNDERVOLTAGE); contactor.open()"
+  component: mcu
+  description: Cell undervoltage protection at 2.50V per cell
+
+- id: overcurrent_discharge
+  condition: "pack_current_a > 120"
+  action: "fault(OVERCURRENT); contactor.open()"
+  component: mcu
+  description: Discharge overcurrent limit — adjust for application
