@@ -1,0 +1,36 @@
+# CANary BMS Workbench — Render Blueprint
+# Single web service: FastAPI API + Vite static UI (same origin)
+services:
+  - type: web
+    name: canary-bms
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: chmod +x scripts/render-build.sh && ./scripts/render-build.sh
+    startCommand: PYTHONPATH=backend/src python -m uvicorn agent_workbench.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.12"
+      - key: WORKBENCH_TOKEN
+        generateValue: true
+      - key: WORKBENCH_WORKSPACE_ROOT
+        value: workspaces
+      - key: WORKBENCH_ALLOWED_ROOTS
+        value: workspaces
+      - key: WORKBENCH_DATA_DIR
+        value: .data
+      - key: WORKBENCH_SERVE_STATIC
+        value: "true"
+      - key: WORKBENCH_STATIC_DIR
+        value: apps/web/dist
+      - key: WORKBENCH_DEFAULT_MODEL
+        value: mock:deterministic
+      - key: WORKBENCH_OPSERA_ENABLED
+        value: "false"
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: FIREWORKS_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        sync: false

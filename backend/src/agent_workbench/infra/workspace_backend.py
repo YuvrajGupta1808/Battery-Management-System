@@ -11,6 +11,7 @@ from deepagents.backends import LocalShellBackend
 from deepagents.backends.protocol import EditResult, LsResult, WriteResult
 
 from ..services.bms_validation import validate_bms_file
+from ..services.topology_layout import reshape_architecture_for_topology
 
 HOST_PATH_PREFIXES = ("Users/", "home/", "private/", "var/", "tmp/", "Volumes/")
 
@@ -85,6 +86,7 @@ def prepare_bms_write_content(path: str, content: str) -> tuple[str, str | None]
             return content, f"Invalid JSON in BMS architecture file: {exc.msg} at line {exc.lineno}"
         if "templates/" not in normalized:
             data.pop("template_meta", None)
+            data = reshape_architecture_for_topology(data)
             write_content = json.dumps(data, indent=2) + "\n"
 
     try:

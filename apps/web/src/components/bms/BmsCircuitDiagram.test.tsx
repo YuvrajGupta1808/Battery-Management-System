@@ -15,7 +15,7 @@ describe("BmsCircuitDiagram", () => {
     const architecture = parseArchitecture(fixture)!;
     render(<BmsCircuitDiagram architecture={architecture} safetyRules={[]} />);
     expect(screen.getByText("BMS Board")).toBeInTheDocument();
-    expect(screen.getByText("4S Cell Stack")).toBeInTheDocument();
+    expect(screen.getByText("4S NMC Stack")).toBeInTheDocument();
   });
 
   it("shows pack summary in inspector", () => {
@@ -32,8 +32,9 @@ describe("BmsCircuitDiagram", () => {
     fireEvent.click(screen.getByText("BMS Board"));
 
     expect(screen.getByRole("button", { name: "BMS" })).toBeInTheDocument();
-    expect(screen.getByText("Cell Monitor IC")).toBeInTheDocument();
-    expect(screen.queryByText("4S Cell Stack")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Cell Monitor AFE/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /BQ76952/ })).toBeInTheDocument();
+    expect(screen.queryByText("4S NMC Stack")).not.toBeInTheDocument();
   });
 
   it("navigates back to pack via breadcrumb", () => {
@@ -43,7 +44,7 @@ describe("BmsCircuitDiagram", () => {
     fireEvent.click(screen.getByText("BMS Board"));
     fireEvent.click(screen.getByRole("button", { name: "Pack" }));
 
-    expect(screen.getByText("4S Cell Stack")).toBeInTheDocument();
+    expect(screen.getByText("4S NMC Stack")).toBeInTheDocument();
   });
 
   it("shows safety rules when MCU selected in BMS view", () => {
@@ -59,7 +60,7 @@ describe("BmsCircuitDiagram", () => {
     render(<BmsCircuitDiagram architecture={architecture} safetyRules={rules} />);
 
     fireEvent.click(screen.getByText("BMS Board"));
-    fireEvent.click(screen.getByText("MCU"));
+    fireEvent.click(screen.getByRole("button", { name: /MCU · STM32F407|STM32F407/ }));
 
     expect(screen.getByText("thermal_fan_on")).toBeInTheDocument();
     expect(screen.getByText("pack_temp_c > 80")).toBeInTheDocument();

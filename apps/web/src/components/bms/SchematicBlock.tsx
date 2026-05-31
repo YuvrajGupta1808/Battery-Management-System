@@ -1,7 +1,6 @@
 import {
   blockLabelStartY,
-  formatBlockDisplayLabel,
-  parseLabelParts,
+  formatSchematicBlockLabels,
   truncateLabel,
 } from "../../lib/bms/blockLabel";
 import type { PackInfo, SchematicNode } from "../../lib/bms/types";
@@ -47,15 +46,22 @@ export function SchematicBlock({
   const monitored = node.type === "cell_monitor_ic" ? monitoredCellCount(node) : null;
   const showAfeCells = node.type === "cell_monitor_ic" && monitored !== null && monitored > 0;
 
-  const display = formatBlockDisplayLabel(node.label, node.width, { partNumber });
-  const labelDetail = parseLabelParts(node.label).detail;
-  const showTypeFallback = !showPackCells && display.lines.length === 1 && !labelDetail && !partNumber;
+  const componentMeta =
+    node.component_ref && components?.[node.component_ref]
+      ? components[node.component_ref]
+      : undefined;
+
+  const display = formatSchematicBlockLabels(node.type, node.label, node.width, {
+    partNumber,
+    componentMeta,
+    maxLines: node.height >= 95 ? 3 : 2,
+  });
 
   const labelStartY = blockLabelStartY(node.height, display.lines.length, {
     topAligned: showPackCells,
   });
   const clipId = `schematic-clip-${node.id}`;
-  const shownText = display.lines.join(" · ");
+  const shownText = display.lines.map((l) => l.text).join(" · ");
   const ariaLabel = shownText !== display.full ? display.full : node.label;
 
   return (
@@ -117,25 +123,21 @@ export function SchematicBlock({
         >
           {display.lines.map((line, index) => (
             <tspan
-              key={`${index}-${line}`}
+              key={`${index}-${line.text}`}
               x={node.width / 2}
               dy={index === 0 ? 0 : 11}
-              className={index === 0 ? undefined : "schematic-block-sublabel"}
+              className={
+                line.variant === "part"
+                  ? "schematic-block-part"
+                  : line.variant === "detail"
+                    ? "schematic-block-sublabel"
+                    : undefined
+              }
             >
-              {line}
+              {line.text}
             </tspan>
           ))}
         </text>
-        {showTypeFallback && (
-          <text
-            className="schematic-block-type"
-            x={node.width / 2}
-            y={labelStartY + 22}
-            textAnchor="middle"
-          >
-            {truncateLabel(node.type.replace(/_/g, " "), 18)}
-          </text>
-        )}
       </g>
 
       {pins.map((pin) => {

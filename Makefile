@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-web test test-backend test-web build-web
+.PHONY: dev dev-backend dev-web test test-backend test-web build-web opsera-login opsera-probe
 
 dev:
 	pnpm dev
@@ -19,3 +19,12 @@ test-web:
 
 build-web:
 	pnpm --dir apps/web build
+
+opsera-login:
+	PYTHONPATH=backend/src .venv/bin/python -m agent_workbench.scripts.opsera_login
+
+opsera-probe:
+	PYTHONPATH=backend/src .venv/bin/python -m agent_workbench.scripts.opsera_probe --workspace workspaces/default --probe
+
+opsera-list:
+	PYTHONPATH=backend/src .venv/bin/python -m agent_workbench.scripts.opsera_probe --workspace workspaces/default

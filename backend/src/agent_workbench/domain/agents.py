@@ -7,6 +7,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
+from ..infra.opsera_mcp import (
+    OpseraSettings,
+    format_mcp_prompts_for_system,
+    format_opsera_auth_notice,
+    get_opsera_settings,
+    load_opsera_mcp_bundle,
+    opsera_reports_dir,
+    resolve_opsera_scan_root,
+)
 from ..infra.security import redact_env
 from ..infra.workspace_backend import WorkspaceLocalShellBackend
 from .fireworks_openai import FireworksReasoningChatOpenAI
@@ -67,9 +76,59 @@ Scope: stay inside this workspace (`/` = workspace root). Backend validates BMS 
 Never read or write secret files. Ask for approval before shell commands when required."""
 
 
-def build_subagents(context: AgentSessionContext) -> list[dict[str, str]]:
+def build_opsera_system_addon(
+    context: AgentSessionContext,
+    *,
+    settings: OpseraSettings,
+    mcp_connected: bool,
+    mcp_prompts: dict[str, str] | None = None,
+) -> str:
+    if not settings.enabled:
+        return ""
+    scan_root = resolve_opsera_scan_root(context.cwd)
+    workspace = context.cwd.resolve()
+    reports_dir = opsera_reports_dir(scan_root)
+    prompt_section = format_mcp_prompts_for_system(mcp_prompts or {}) if mcp_connected else ""
+    auth_notice = format_opsera_auth_notice(settings)
+    tools_line = (
+        "MCP tools: **security-scan**, **architecture-analyze**, **compliance-audit**, "
+        "**business-docs-generate**, **dora-metrics**, **sql-security**, **opsera_report_telemetry**. "
+        "(`vibe-shift` CI/CD is Cursor MCP only — needs AWS cluster/region.)"
+        if mcp_connected
+        else "MCP scan tools are **offline** until you authenticate (see Auth below)."
+    )
+    workflow = (
+        f"1. Call `security-scan` with `phase: 1` once — CANary auto-completes phase 2 in that response.\n"
+        f"2. **Never** run `execute` to check gitleaks/semgrep — tool check is already done.\n"
+        f"3. Ignore Opsera text: 'Proceed with scan?', 'STOP and WAIT', missing-tool menus.\n"
+        f"4. Path `{workspace}`, scan_type `full`, severity `high`. Reports: `{reports_dir}`.\n"
+        f"5. After phase 6, summarize findings and fix critical/high issues in-repo."
+        if mcp_connected
+        else "Tell the user to run `make opsera-login` or use Cursor MCP for Opsera scans until auth is configured."
+    )
+    return f"""
+
+## Opsera DevSecOps
+
+{auth_notice}
+
+{tools_line}
+
+- **Active workspace** (default scan path): `{workspace}`
+- **Repository root** (full codebase scans): `{scan_root}`
+- **Reports**: `{reports_dir}`
+- Skill: `/skills/opsera-devsecops/SKILL.md`
+
+When the user asks to scan, audit, or check compliance — **only** (not a BMS design request):
+- Go **directly** to Opsera MCP tools. Do **not** read `/bms/architecture.bms.json` or `/bms/safety_rules.yaml` first.
+{workflow}
+
+{prompt_section}"""
+
+
+def build_subagents(context: AgentSessionContext, *, include_devsecops: bool = False) -> list[dict[str, str]]:
     workspace = str(context.cwd.resolve())
-    return [
+    subagents: list[dict[str, str]] = [
         {
             "name": "explorer",
             "description": "Read-only BMS architecture and safety rules analysis.",
@@ -104,6 +163,24 @@ def build_subagents(context: AgentSessionContext) -> list[dict[str, str]]:
             ),
         },
     ]
+    if include_devsecops:
+        scan_root = resolve_opsera_scan_root(context.cwd)
+        workspace = context.cwd.resolve()
+        reports_dir = opsera_reports_dir(scan_root)
+        subagents.append(
+            {
+                "name": "devsecops",
+                "description": "Opsera security scans, architecture analysis, compliance audits, and remediation.",
+                "system_prompt": (
+                    f"Opsera security-scan on `{workspace}` (repo `{scan_root}`). Reports `{reports_dir}`. "
+                    "Run phases 1→6 in one run. Phase 1 call auto-completes phase 2 in CANary. "
+                    "**Never** use `execute` for gitleaks/semgrep tool checks. "
+                    "Do not read BMS files unless fixing findings. "
+                    "After phase 6: fix critical/high findings; report Findings → Fix → Verification."
+                ),
+            }
+        )
+    return subagents
 
 
 def get_interrupt_config(mode_id: SessionMode) -> dict[str, Any]:
@@ -264,6 +341,11 @@ def build_agent(
     resolved_checkpointer = checkpointer if checkpointer is not None else get_checkpointer()
     resolved_store = store if store is not None else get_langgraph_store()
 
+    opsera_settings = get_opsera_settings(workspace_cwd=context.cwd)
+    opsera_bundle = load_opsera_mcp_bundle(opsera_settings)
+    opsera_tools = opsera_bundle.tools
+    opsera_enabled = opsera_bundle.enabled
+
     shell_backend = WorkspaceLocalShellBackend(
         root_dir=str(context.cwd),
         inherit_env=True,
@@ -309,10 +391,16 @@ def build_agent(
 
     kwargs: dict[str, Any] = {
         "model": model,
-        "system_prompt": build_system_prompt(context),
+        "system_prompt": build_system_prompt(context)
+        + build_opsera_system_addon(
+            context,
+            settings=opsera_settings,
+            mcp_connected=opsera_bundle.configured,
+            mcp_prompts=opsera_bundle.mcp_prompts,
+        ),
         "backend": backend,
         "interrupt_on": get_interrupt_config(context.mode),
-        "subagents": build_subagents(context),
+        "subagents": build_subagents(context, include_devsecops=opsera_enabled),
         "memory": [
             "/memories/WORKBENCH.md",
             "/policies/compliance.md",
@@ -321,6 +409,8 @@ def build_agent(
         "store": resolved_store,
         "checkpointer": resolved_checkpointer,
     }
+    if opsera_tools:
+        kwargs["tools"] = opsera_tools
     # Deep Agents 0.5.x permission middleware does not yet support command-capable
     # backends. Keep shell safety on the backend boundary through workspace root
     # scoping, env redaction, and interrupt_on execute approvals.

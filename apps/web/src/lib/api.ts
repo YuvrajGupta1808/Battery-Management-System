@@ -12,7 +12,7 @@ import type {
 } from "../types/api";
 import { parseSseFrames } from "./sse";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8787";
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? "" : "http://127.0.0.1:8787");
 const TOKEN_KEY = "agent-workbench-token";
 const DEFAULT_TOKEN = import.meta.env.VITE_WORKBENCH_TOKEN ?? "dev-local-token";
 

@@ -1,0 +1,224 @@
+{
+  "schema_version": "1.0",
+  "template_meta": {
+    "purpose": "Reference skeleton for agents — copy to bms/architecture.bms.json and customize",
+    "do_not_edit_in_place": true,
+    "output_file": "bms/architecture.bms.json",
+    "generation_checklist": [
+      "Set pack.topology, cell_count (= series × parallel), chemistry, nominal_voltage_v",
+      "Reshape schematic per topology — not metadata-only: cell stack width/label, AFE CELL_1-N pins, busbars for 2p+",
+      "views.pack: include cells, bms_board (drill_view bms), contactor; add cooling/busbars if relevant",
+      "views.bms: include mcu, cell_monitor_ic, temperature_network, balancing, current_sensor, can_transceiver, memory",
+      "Every node: id, type, label, x, y, width (>=40), height (>=30), pins[] with id/label/side",
+      "edges: connect pins with from_node, from_pin, to_node, to_pin, signal",
+      "components: real part numbers (e.g. BQ76952, STM32F407, MCP2551, INA226)",
+      "Create bms/safety_rules.yaml with thermal, OVP, UVP, OCP rules linked to component mcu"
+    ],
+    "pack_view_required_types": ["cells", "bms_board", "contactor"],
+    "pack_view_optional_types": ["cooling", "busbars", "load"],
+    "bms_view_required_types": [
+      "mcu",
+      "cell_monitor_ic",
+      "temperature_network",
+      "balancing",
+      "current_sensor",
+      "can_transceiver",
+      "memory"
+    ],
+    "example_topologies": {
+      "4s1p": { "cell_count": 4, "nominal_voltage_v": 14.8 },
+      "12s2p": { "cell_count": 24, "nominal_voltage_v": 44.4 },
+      "16s4p": { "cell_count": 64, "nominal_voltage_v": 59.2 }
+    }
+  },
+  "pack": {
+    "topology": "4s1p",
+    "cell_count": 4,
+    "chemistry": "NMC",
+    "nominal_voltage_v": 14.8
+  },
+  "views": {
+    "pack": {
+      "nodes": [
+        {
+          "id": "cells",
+          "type": "cells",
+          "label": "4S Cell Stack",
+          "x": 80,
+          "y": 380,
+          "width": 200,
+          "height": 80,
+          "pins": [
+            { "id": "bneg", "label": "B-", "side": "left" },
+            { "id": "bpos", "label": "B+", "side": "right" }
+          ]
+        },
+        {
+          "id": "cooling",
+          "type": "cooling",
+          "label": "Cooling Fan",
+          "x": 360,
+          "y": 80,
+          "width": 120,
+          "height": 70,
+          "pins": [{ "id": "fan_pwr", "label": "FAN_PWR", "side": "bottom" }]
+        },
+        {
+          "id": "bms_board",
+          "type": "bms_board",
+          "label": "BMS Board",
+          "x": 340,
+          "y": 260,
+          "width": 160,
+          "height": 120,
+          "drill_view": "bms",
+          "pins": [
+            { "id": "pack_pos", "label": "PACK+", "side": "left" },
+            { "id": "pack_neg", "label": "PACK-", "side": "left" },
+            { "id": "can_bus", "label": "CAN", "side": "right" },
+            { "id": "fan_ctrl", "label": "FAN_CTRL", "side": "top" }
+          ]
+        },
+        {
+          "id": "contactor",
+          "type": "contactor",
+          "label": "Contactor",
+          "x": 560,
+          "y": 280,
+          "width": 100,
+          "height": 80,
+          "pins": [
+            { "id": "batt_in", "label": "BATT_IN", "side": "left" },
+            { "id": "load", "label": "LOAD", "side": "right" }
+          ]
+        }
+      ],
+      "edges": [
+        { "from_node": "cells", "from_pin": "bpos", "to_node": "bms_board", "to_pin": "pack_pos", "signal": "PACK+" },
+        { "from_node": "cells", "from_pin": "bneg", "to_node": "bms_board", "to_pin": "pack_neg", "signal": "PACK-" },
+        { "from_node": "bms_board", "from_pin": "pack_pos", "to_node": "contactor", "to_pin": "batt_in", "signal": "MAIN+" },
+        { "from_node": "bms_board", "from_pin": "fan_ctrl", "to_node": "cooling", "to_pin": "fan_pwr", "signal": "FAN_CTRL" }
+      ]
+    },
+    "bms": {
+      "nodes": [
+        {
+          "id": "mcu",
+          "type": "mcu",
+          "label": "MCU",
+          "x": 300,
+          "y": 40,
+          "width": 150,
+          "height": 90,
+          "component_ref": "mcu",
+          "telemetry": { "cpu_pct": 0, "can_status": "Idle" },
+          "pins": [
+            { "id": "i2c_sda", "label": "I2C_SDA", "side": "bottom" },
+            { "id": "i2c_scl", "label": "I2C_SCL", "side": "bottom" },
+            { "id": "can_tx", "label": "CAN_TX", "side": "right" },
+            { "id": "spi_mosi", "label": "SPI_MOSI", "side": "left" }
+          ]
+        },
+        {
+          "id": "cell_ic",
+          "type": "cell_monitor_ic",
+          "label": "Cell Monitor IC",
+          "x": 60,
+          "y": 200,
+          "width": 170,
+          "height": 85,
+          "component_ref": "cell_monitor_0",
+          "telemetry": { "cells_monitored": 4 },
+          "pins": [
+            { "id": "cell_sense", "label": "CELL_1-4", "side": "left" },
+            { "id": "i2c_sda", "label": "I2C_SDA", "side": "top" },
+            { "id": "i2c_scl", "label": "I2C_SCL", "side": "top" },
+            { "id": "bal_out", "label": "BAL_OUT", "side": "right" }
+          ]
+        },
+        {
+          "id": "temp_net",
+          "type": "temperature_network",
+          "label": "Temp Network",
+          "x": 60,
+          "y": 340,
+          "width": 150,
+          "height": 70,
+          "component_ref": "temp_network",
+          "telemetry": { "sensors_online": 4 },
+          "pins": [
+            { "id": "ntc", "label": "NTC_1-4", "side": "left" },
+            { "id": "i2c_sda", "label": "I2C_SDA", "side": "top" }
+          ]
+        },
+        {
+          "id": "balancing",
+          "type": "balancing",
+          "label": "Balancing",
+          "x": 280,
+          "y": 340,
+          "width": 120,
+          "height": 70,
+          "component_ref": "balancing",
+          "pins": [{ "id": "bal_in", "label": "BAL_IN", "side": "left" }]
+        },
+        {
+          "id": "current",
+          "type": "current_sensor",
+          "label": "Current Sensor",
+          "x": 460,
+          "y": 340,
+          "width": 140,
+          "height": 70,
+          "component_ref": "current_sensor",
+          "pins": [
+            { "id": "shunt", "label": "SHUNT", "side": "left" },
+            { "id": "i2c_sda", "label": "I2C_SDA", "side": "top" }
+          ]
+        },
+        {
+          "id": "can",
+          "type": "can_transceiver",
+          "label": "CAN Transceiver",
+          "x": 520,
+          "y": 40,
+          "width": 140,
+          "height": 70,
+          "component_ref": "can_transceiver",
+          "pins": [
+            { "id": "tx", "label": "TX", "side": "left" },
+            { "id": "can_h", "label": "CAN_H", "side": "right" }
+          ]
+        },
+        {
+          "id": "memory",
+          "type": "memory",
+          "label": "EEPROM / Flash",
+          "x": 520,
+          "y": 420,
+          "width": 140,
+          "height": 70,
+          "component_ref": "memory",
+          "pins": [{ "id": "spi", "label": "SPI", "side": "left" }]
+        }
+      ],
+      "edges": [
+        { "from_node": "mcu", "from_pin": "i2c_sda", "to_node": "cell_ic", "to_pin": "i2c_sda", "signal": "I2C_SDA" },
+        { "from_node": "mcu", "from_pin": "i2c_scl", "to_node": "cell_ic", "to_pin": "i2c_scl", "signal": "I2C_SCL" },
+        { "from_node": "mcu", "from_pin": "i2c_sda", "to_node": "temp_net", "to_pin": "i2c_sda", "signal": "I2C_SDA" },
+        { "from_node": "cell_ic", "from_pin": "bal_out", "to_node": "balancing", "to_pin": "bal_in", "signal": "BAL_CTRL" },
+        { "from_node": "mcu", "from_pin": "can_tx", "to_node": "can", "to_pin": "tx", "signal": "CAN_TX" },
+        { "from_node": "mcu", "from_pin": "spi_mosi", "to_node": "memory", "to_pin": "spi", "signal": "SPI_MOSI" }
+      ]
+    }
+  },
+  "components": {
+    "mcu": { "part": "STM32F407", "role": "protection_logic" },
+    "cell_monitor_0": { "part": "BQ76952", "cells_monitored": 4 },
+    "temp_network": { "part": "NTC Array", "sensor_count": 4 },
+    "balancing": { "part": "Passive Balancing", "mode": "passive" },
+    "current_sensor": { "part": "INA226", "shunt_mohm": 0.5 },
+    "can_transceiver": { "part": "MCP2551" },
+    "memory": { "part": "AT24C256", "role": "firmware_storage" }
+  }
+}

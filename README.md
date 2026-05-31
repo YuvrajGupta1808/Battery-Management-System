@@ -94,6 +94,8 @@ BMS product code and documentation should be developed inside `workspaces/defaul
 
 [Opsera DevSecOps Agents](https://docs.agents.opsera.ai/) connect via MCP for in-IDE security scans and architecture analysis. Project config: `.cursor/mcp.json`. Setup, branch strategy, and scan reports: [docs/opsera-scan/](docs/opsera-scan/).
 
+**Deep Agent integration:** Cursor MCP auth does not carry over to the backend. Run `make opsera-login` once (browser Google sign-in, same as Cursor) or set optional `OPSERA_API_TOKEN`. See [docs/opsera-scan/SETUP.md](docs/opsera-scan/SETUP.md).
+
 Quick start: install from [Cursor Marketplace](https://cursor.com/marketplace/opsera), then in chat ask *"Run a security scan on this repository"* or *"Analyze the architecture of CANary"*.
 
 ## Development

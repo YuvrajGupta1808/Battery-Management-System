@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from threading import Lock
 from typing import TYPE_CHECKING, Any
 
@@ -50,9 +51,27 @@ def _seed_org_policies(store: InMemoryStore | Any) -> None:
                 """## Local workbench policies
 - Do not exfiltrate secrets from .env or credential files.
 - Prefer minimal diffs and explain risky commands before execution.
+- Opsera scan reports belong under `docs/opsera-scan/reports/` at the repository root.
 """
             ),
         )
+
+    _seed_opsera_skill(store)
+
+
+def _opsera_skill_content() -> str:
+    skill_path = Path(__file__).resolve().parent.parent / "skills" / "opsera-devsecops" / "SKILL.md"
+    if skill_path.is_file():
+        return skill_path.read_text(encoding="utf-8")
+    return "# Opsera DevSecOps\n\nUse security-scan, architecture-analyze, and compliance-audit MCP tools.\n"
+
+
+def _seed_opsera_skill(store: InMemoryStore | Any) -> None:
+    from deepagents.backends.utils import create_file_data
+
+    ns = ("workbench",)
+    key = "/skills/opsera-devsecops/SKILL.md"
+    store.put(ns, key, create_file_data(_opsera_skill_content()))
 
 
 def ensure_session_store_seeded(store: Any, session_id: str, *, workspace_root: str | None = None) -> None:

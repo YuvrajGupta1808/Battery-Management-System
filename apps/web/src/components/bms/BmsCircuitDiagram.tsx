@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { viewBounds } from "../../lib/bms/layout";
+import { adaptArchitectureForTopology } from "../../lib/bms/topologyLayout";
 import type { BmsArchitecture, BmsViewId, SafetyRule, SchematicNode } from "../../lib/bms/types";
 import { BmsBreadcrumb } from "./BmsBreadcrumb";
 import { ComponentInspector } from "./ComponentInspector";
@@ -22,8 +23,9 @@ export function BmsCircuitDiagram({
   const [activeView, setActiveView] = useState<BmsViewId>("pack");
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  const packView = architecture.views?.pack;
-  const bmsView = architecture.views?.bms;
+  const displayArchitecture = useMemo(() => adaptArchitectureForTopology(architecture), [architecture]);
+  const packView = displayArchitecture.views?.pack;
+  const bmsView = displayArchitecture.views?.bms;
   const view = activeView === "pack" ? packView : bmsView;
   const nodes = view?.nodes ?? [];
   const edges = view?.edges ?? [];

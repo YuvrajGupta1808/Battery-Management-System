@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://canary.ai/bms/architecture.schema.json",
+  "title": "BMS Architecture",
+  "type": "object",
+  "required": ["schema_version", "pack", "views"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "pack": {
+      "type": "object",
+      "required": ["topology", "cell_count", "chemistry", "nominal_voltage_v"],
+      "properties": {
+        "topology": { "type": "string", "examples": ["4s1p", "12s2p", "16s4p"] },
+        "cell_count": { "type": "integer", "minimum": 1 },
+        "chemistry": { "type": "string", "examples": ["NMC", "LFP", "NCA"] },
+        "nominal_voltage_v": { "type": "number", "minimum": 0 }
+      }
+    },
+    "views": {
+      "type": "object",
+      "required": ["pack", "bms"],
+      "properties": {
+        "pack": { "$ref": "#/$defs/schematicView" },
+        "bms": { "$ref": "#/$defs/schematicView" }
+      }
+    },
+    "components": { "type": "object" }
+  },
+  "$defs": {
+    "pin": {
+      "type": "object",
+      "required": ["id", "label", "side"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "side": { "enum": ["left", "right", "top", "bottom"] }
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "type", "label", "x", "y", "width", "height"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "label": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "width": { "type": "number", "minimum": 40 },
+        "height": { "type": "number", "minimum": 30 },
+        "pins": { "type": "array", "items": { "$ref": "#/$defs/pin" } },
+        "drill_view": { "type": "string", "enum": ["bms"] },
+        "component_ref": { "type": "string" },
+        "telemetry": { "type": "object" }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": ["from_node", "from_pin", "to_node", "to_pin", "signal"],
+      "properties": {
+        "from_node": { "type": "string" },
+        "from_pin": { "type": "string" },
+        "to_node": { "type": "string" },
+        "to_pin": { "type": "string" },
+        "signal": { "type": "string" }
+      }
+    },
+    "schematicView": {
+      "type": "object",
+      "required": ["nodes", "edges"],
+      "properties": {
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" }, "minItems": 1 },
+        "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } }
+      }
+    }
+  }
+}

@@ -1,5 +1,6 @@
 """Workspace file tree, content, diff, uploads, and apply."""
 
+import json
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
@@ -8,6 +9,7 @@ from ..core.dependencies import get_store, get_workspace_manager
 from ..domain.models import ApplyFileRequest
 from ..infra.security import require_auth
 from ..services.bms_validation import validate_bms_file
+from ..services.topology_layout import reshape_architecture_for_topology
 from ..infra.session_store import SessionStore
 from ..infra.workspace import WorkspaceManager
 
@@ -74,8 +76,19 @@ def apply_file(
     if session.workspace_mode == "remote_sandbox":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Remote sandbox file apply is not enabled")
     try:
-        validate_bms_file(payload.path, payload.content)
+        content = payload.content
+        if payload.path.replace("\\", "/").lstrip("/").endswith(".bms.json"):
+            data = json.loads(payload.content)
+            data.pop("template_meta", None)
+            data = reshape_architecture_for_topology(data)
+            content = json.dumps(data, indent=2) + "\n"
+        validate_bms_file(payload.path, content)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid JSON in BMS architecture file: {exc.msg} at line {exc.lineno}",
+        ) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
-    content = workspace_manager.write_file(Path(session.cwd), payload.path, payload.content)
+    content = workspace_manager.write_file(Path(session.cwd), payload.path, content)
     return content.model_dump(mode="json")

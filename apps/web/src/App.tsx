@@ -12,7 +12,7 @@ import {
   SquareTerminal,
   X
 } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactElement } from "react";
 
 import { FileTree } from "./components/FileTree";
 import { WorkbenchPane } from "./components/workbench/WorkbenchPane";
@@ -100,9 +100,39 @@ export function App() {
   const terminalOutputRef = useRef<HTMLPreElement>(null);
   const composerTextareaRef = useRef<HTMLTextAreaElement>(null);
   const editorAreaRef = useRef<HTMLDivElement>(null);
+  const workbenchStackRef = useRef<HTMLDivElement>(null);
+  const terminalResizeRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const [editorSize, setEditorSize] = useState({ width: 0, height: 0 });
+  const [terminalHeight, setTerminalHeight] = useState(300);
 
+  const TERMINAL_MIN_HEIGHT = 120;
   const COMPOSER_TEXTAREA_MAX_PX = 320;
+
+  const onTerminalResizePointerDown = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      terminalResizeRef.current = { startY: event.clientY, startHeight: terminalHeight };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    [terminalHeight],
+  );
+
+  const onTerminalResizePointerMove = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    const drag = terminalResizeRef.current;
+    if (!drag) return;
+    const stackHeight = workbenchStackRef.current?.getBoundingClientRect().height ?? 640;
+    const maxHeight = Math.max(TERMINAL_MIN_HEIGHT, stackHeight - 160);
+    const delta = drag.startY - event.clientY;
+    const next = Math.min(maxHeight, Math.max(TERMINAL_MIN_HEIGHT, drag.startHeight + delta));
+    setTerminalHeight(next);
+  }, []);
+
+  const onTerminalResizePointerEnd = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    terminalResizeRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }, []);
 
   const resizeComposerTextarea = useCallback(() => {
     const ta = composerTextareaRef.current;
@@ -645,7 +675,7 @@ export function App() {
       </aside>
 
       <div className="main-content">
-        <div className="workbench-stack">
+        <div className="workbench-stack" ref={workbenchStackRef}>
           <WorkbenchPane
             selectedPath={selectedPath}
             fileContent={fileContent}
@@ -662,7 +692,20 @@ export function App() {
             onSave={() => void saveFile()}
           />
 
-          <section className="terminal-dock">
+          <div
+            className="terminal-resize-handle"
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize terminal"
+            aria-valuemin={TERMINAL_MIN_HEIGHT}
+            aria-valuenow={terminalHeight}
+            onPointerDown={onTerminalResizePointerDown}
+            onPointerMove={onTerminalResizePointerMove}
+            onPointerUp={onTerminalResizePointerEnd}
+            onPointerCancel={onTerminalResizePointerEnd}
+          />
+
+          <section className="terminal-dock" style={{ height: terminalHeight }}>
             <div className="terminal-header">
               <div>
                 <SquareTerminal />
