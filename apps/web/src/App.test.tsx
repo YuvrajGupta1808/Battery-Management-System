@@ -36,4 +36,18 @@ describe("LandingPage content", () => {
     expect(screen.getByRole("heading", { name: /interactive svg schematics/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /schema-backed validation/i })).toBeInTheDocument();
   });
+
+  it("links to the public demo slides deck", () => {
+    window.history.replaceState({}, "", "/");
+    render(<App />);
+    const slidesLinks = screen.getAllByRole("link", { name: /demo slides/i });
+    expect(slidesLinks.length).toBeGreaterThan(0);
+    for (const link of slidesLinks) {
+      expect(link).toHaveAttribute(
+        "href",
+        "https://docs.google.com/presentation/d/1CKAFcLRS_bu9ad1yHA_NGsjL9XdnqZ1kjYYGaqD6e_8/edit?usp=sharing",
+      );
+      expect(link).toHaveAttribute("target", "_blank");
+    }
+  });
 });

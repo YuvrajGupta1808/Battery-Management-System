@@ -5,9 +5,14 @@ import {
   CircuitBoard,
   FileJson,
   Layers,
+  Presentation,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+
+/** Public demo deck — problem, solution, Tigris/Opsera integration, live demo flow. */
+export const DEMO_SLIDES_URL =
+  "https://docs.google.com/presentation/d/1CKAFcLRS_bu9ad1yHA_NGsjL9XdnqZ1kjYYGaqD6e_8/edit?usp=sharing";
 
 import { CanaryMark } from "../components/CanaryMark";
 import { Button } from "../components/ui/button";
@@ -74,10 +79,21 @@ export function LandingPage({ onOpenWorkbench }: LandingPageProps) {
             <span>BMS Validation Workbench</span>
           </div>
         </div>
-        <Button className="landing-header-cta" onClick={onOpenWorkbench}>
-          Open Workbench
-          <ArrowRight />
-        </Button>
+        <div className="landing-header-actions">
+          <a
+            className="landing-slides-link landing-slides-link--header"
+            href={DEMO_SLIDES_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Presentation aria-hidden="true" />
+            Demo slides
+          </a>
+          <Button className="landing-header-cta" onClick={onOpenWorkbench}>
+            Open Workbench
+            <ArrowRight />
+          </Button>
+        </div>
       </header>
 
       <main className="landing-main">
@@ -100,7 +116,22 @@ export function LandingPage({ onOpenWorkbench }: LandingPageProps) {
               Start in the workbench
               <ArrowRight />
             </Button>
+            <a
+              className="landing-slides-link landing-slides-link--hero"
+              href={DEMO_SLIDES_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Presentation aria-hidden="true" />
+              View demo slides
+            </a>
           </div>
+          <p className="landing-slides-note">
+            Problem statement, architecture, Tigris &amp; Opsera integration —{" "}
+            <a href={DEMO_SLIDES_URL} target="_blank" rel="noopener noreferrer">
+              open the deck
+            </a>
+          </p>
         </section>
 
         <section className="landing-section">
@@ -183,6 +214,10 @@ export function LandingPage({ onOpenWorkbench }: LandingPageProps) {
 
       <footer className="landing-footer">
         <span>CANary — BMS Validation Workbench</span>
+        <a className="landing-slides-link landing-slides-link--footer" href={DEMO_SLIDES_URL} target="_blank" rel="noopener noreferrer">
+          <Presentation aria-hidden="true" />
+          CANary demo slides (Google Slides)
+        </a>
         <span>Agent-authored diagrams · Schema validation · Safety rule inspection</span>
       </footer>
     </div>
