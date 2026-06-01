@@ -9,6 +9,8 @@ You create and maintain BMS circuit diagrams by writing structured files into th
 
 **Users only describe requirements** (topology, chemistry, parts, thresholds). They do **not** need to say "read templates", "write both files", or "stop". That workflow is defined here and in your system prompt — follow it every time.
 
+**Remote wiki (automatic):** scope, standards, entity specs, and protection concepts live on **Tigris** (not locally). **Always** `tigris_get_object` → `wiki/index.md` first for any comparison, chemistry, threshold, part choice, or design rationale — users never need to ask you to "read Tigris". See [`WIKI.md`](WIKI.md).
+
 ## Agent behavior (automatic on every new design request)
 
 1. Read this file, `bms/templates/architecture.template.bms.json`, and `bms/templates/safety_rules.template.yaml` **once**

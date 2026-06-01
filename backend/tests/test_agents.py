@@ -17,6 +17,8 @@ def test_build_system_prompt_scopes_to_workspace(tmp_path: Path) -> None:
     assert "bms/SKILL.md" in prompt
     assert "architecture.bms.json" in prompt
     assert "automatically" in prompt
+    assert "never say" in prompt.lower() or "never need to say" in prompt.lower()
+    assert "Tigris" in prompt
 
 
 def test_build_subagents_reference_workspace(tmp_path: Path) -> None:

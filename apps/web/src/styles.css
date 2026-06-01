@@ -1988,17 +1988,17 @@ p,
   color: hsl(var(--muted-foreground));
 }
 
-.landing-logo-mark {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  border: 1px solid hsl(var(--border));
-  background: hsl(222 16% 11%);
+.landing-brand-mark {
+  flex-shrink: 0;
   color: hsl(var(--primary));
-  font-size: 16px;
-  font-weight: 800;
+  filter: drop-shadow(0 0 14px hsl(var(--primary) / 0.28));
+}
+
+.landing-hero-mark {
+  display: inline-flex;
+  margin-bottom: 18px;
+  color: hsl(var(--primary));
+  filter: drop-shadow(0 0 24px hsl(var(--primary) / 0.35));
 }
 
 .landing-header-cta svg,
@@ -2050,10 +2050,6 @@ p,
 }
 
 .landing-hero-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
   margin-top: 28px;
 }
 
@@ -2062,14 +2058,6 @@ p,
   padding-inline: 18px;
   font-size: 14px;
   font-weight: 600;
-}
-
-.landing-hero-note {
-  margin: 0;
-  max-width: 48ch;
-  color: hsl(var(--muted-foreground));
-  font-size: 12px;
-  line-height: 1.5;
 }
 
 .landing-section-head h2 {

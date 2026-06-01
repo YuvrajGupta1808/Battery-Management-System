@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { CanaryMark } from "../components/CanaryMark";
 import { Button } from "../components/ui/button";
 
 type LandingPageProps = {
@@ -67,7 +68,7 @@ export function LandingPage({ onOpenWorkbench }: LandingPageProps) {
 
       <header className="landing-header">
         <div className="landing-brand">
-          <span className="landing-logo-mark">C</span>
+          <CanaryMark size={36} className="landing-brand-mark" />
           <div>
             <strong>CANary</strong>
             <span>BMS Validation Workbench</span>
@@ -81,6 +82,9 @@ export function LandingPage({ onOpenWorkbench }: LandingPageProps) {
 
       <main className="landing-main">
         <section className="landing-hero">
+          <div className="landing-hero-mark" aria-hidden="true">
+            <CanaryMark size={64} />
+          </div>
           <p className="landing-eyebrow">Agentic BMS design & validation</p>
           <h1>
             Design battery management systems
@@ -96,9 +100,6 @@ export function LandingPage({ onOpenWorkbench }: LandingPageProps) {
               Start in the workbench
               <ArrowRight />
             </Button>
-            <p className="landing-hero-note">
-              No setup required for demo mode — open the workbench and describe a 4S NMC pack to get started.
-            </p>
           </div>
         </section>
 

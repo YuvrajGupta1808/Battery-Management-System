@@ -7,6 +7,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
+from ..infra.tigris_mcp import (
+    format_tigris_system_addon,
+    get_tigris_mcp_settings,
+    load_tigris_mcp_bundle,
+)
 from ..infra.opsera_mcp import (
     OpseraSettings,
     format_mcp_prompts_for_system,
@@ -42,11 +47,25 @@ Active workspace root: {workspace}
 
 Primary job: **author BMS circuit diagrams** as structured files the UI renders as SVG schematics.
 
+## BMS knowledge (automatic — users never say "read Tigris")
+
+When Tigris MCP is online (see **Tigris remote wiki** below), **always consult the remote wiki before answering or designing** — for any question involving facts, comparisons, reasoning, part selection, chemistry, thresholds, standards, or tradeoffs.
+
+1. `tigris_get_object` → wiki index (`wiki/index.md`), then linked entity/concept/source pages you need.
+2. Base your answer and design choices on wiki content — cite pages when helpful; do **not** guess specs or OVP/UVP from memory when wiki is available.
+
+Examples that require wiki lookup **without** the user asking explicitly:
+- "Compare BQ76952 vs LTC6811 for 12S LFP" → read entity pages + topology/protection concepts, then answer.
+- "What OVP for NMC?" → read protection-systems concept, then answer.
+- "Design a 16S pack with TI AFE" → wiki + templates, then write files.
+
+Pure Q&A (no diagram): wiki first, answer, stop — no local file writes unless asked.
+
 ## Default workflow (you do this automatically — users never need to ask)
 
 When the user describes a pack, topology, parts, or protection thresholds (even briefly):
 
-1. Read `/bms/SKILL.md`, `/bms/templates/architecture.template.bms.json`, and `/bms/templates/safety_rules.template.yaml` **once** — in parallel if possible.
+1. **Tigris wiki** (index + relevant pages via MCP) **and** `/bms/SKILL.md`, `/bms/templates/architecture.template.bms.json`, `/bms/templates/safety_rules.template.yaml` — read **once**, in parallel when possible.
 2. `write_file` **both** `/bms/architecture.bms.json` and `/bms/safety_rules.yaml` in the **same tool batch**:
    - Start from the templates; remove `template_meta`; apply the user's topology, part numbers, labels, and thresholds.
    - **Reshape the schematic per topology** (cell stack width, AFE count/pins, busbars for 2p+, part-specific labels) — not just `pack{{}}` fields.
@@ -58,7 +77,7 @@ When the user describes a pack, topology, parts, or protection thresholds (even 
    - Do **not** spawn subagents for a straightforward new design.
    - Keep reasoning under ~10 lines.
 
-Users say things like: "4s1p NMC e-scooter, BQ76952, fan at 75°C" — you infer the rest from SKILL + templates.
+Users say things like: "4s1p NMC e-scooter, BQ76952, fan at 75°C" — you infer the rest from **Tigris wiki + SKILL + templates**.
 
 ## Threshold / rules-only changes
 
@@ -346,6 +365,10 @@ def build_agent(
     opsera_tools = opsera_bundle.tools
     opsera_enabled = opsera_bundle.enabled
 
+    tigris_settings = get_tigris_mcp_settings()
+    tigris_bundle = load_tigris_mcp_bundle(tigris_settings)
+    tigris_tools = tigris_bundle.tools
+
     shell_backend = WorkspaceLocalShellBackend(
         root_dir=str(context.cwd),
         inherit_env=True,
@@ -397,7 +420,8 @@ def build_agent(
             settings=opsera_settings,
             mcp_connected=opsera_bundle.configured,
             mcp_prompts=opsera_bundle.mcp_prompts,
-        ),
+        )
+        + format_tigris_system_addon(tigris_settings, mcp_connected=tigris_bundle.configured),
         "backend": backend,
         "interrupt_on": get_interrupt_config(context.mode),
         "subagents": build_subagents(context, include_devsecops=opsera_enabled),
@@ -409,8 +433,13 @@ def build_agent(
         "store": resolved_store,
         "checkpointer": resolved_checkpointer,
     }
+    agent_tools: list[Any] = []
     if opsera_tools:
-        kwargs["tools"] = opsera_tools
+        agent_tools.extend(opsera_tools)
+    if tigris_tools:
+        agent_tools.extend(tigris_tools)
+    if agent_tools:
+        kwargs["tools"] = agent_tools
     # Deep Agents 0.5.x permission middleware does not yet support command-capable
     # backends. Keep shell safety on the backend boundary through workspace root
     # scoping, env redaction, and interrupt_on execute approvals.

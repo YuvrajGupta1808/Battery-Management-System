@@ -98,6 +98,27 @@ BMS product code and documentation should be developed inside `workspaces/defaul
 
 Quick start: install from [Cursor Marketplace](https://cursor.com/marketplace/opsera), then in chat ask *"Run a security scan on this repository"* or *"Analyze the architecture of CANary"*.
 
+## Tigris remote wiki
+
+BMS scope, standards, datasheets, and coding conventions live on **[Tigris](https://t3.storage.dev)** — not in the local repo ([Karpathy LLM Wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) pattern).
+
+```bash
+make tigris-bootstrap   # seed remote wiki on Tigris
+make tigris-probe       # verify connectivity + MCP
+```
+
+Setup: [docs/knowledge-base/SETUP.md](docs/knowledge-base/SETUP.md). Project config: [TIGRIS.md](TIGRIS.md), schema pointer: `workspaces/default/bms/WIKI.md`.
+
+Enable **tigris** in Cursor MCP. Ask: *"List objects in canary-bms-knowledge"* or *"Read dev/default/wiki/index.md"*.
+
+## Retriever AI (rtrvr.ai)
+
+Browse vendor URLs and compile extractions to Tigris (batch CLI, not an agent tool): [docs/knowledge-base/RTRVR.md](docs/knowledge-base/RTRVR.md).
+
+```bash
+make rtrvr-sync
+```
+
 ## Development
 
 ### Run services separately

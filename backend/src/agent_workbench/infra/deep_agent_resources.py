@@ -57,6 +57,22 @@ def _seed_org_policies(store: InMemoryStore | Any) -> None:
         )
 
     _seed_opsera_skill(store)
+    _seed_bms_wiki_skill(store)
+
+
+def _bms_wiki_skill_content() -> str:
+    skill_path = Path(__file__).resolve().parent.parent / "skills" / "bms-wiki" / "SKILL.md"
+    if skill_path.is_file():
+        return skill_path.read_text(encoding="utf-8")
+    return "# BMS Wiki\n\nQuery Tigris remote wiki via MCP.\n"
+
+
+def _seed_bms_wiki_skill(store: InMemoryStore | Any) -> None:
+    from deepagents.backends.utils import create_file_data
+
+    ns = ("workbench",)
+    key = "/skills/bms-wiki/SKILL.md"
+    store.put(ns, key, create_file_data(_bms_wiki_skill_content()))
 
 
 def _opsera_skill_content() -> str:
@@ -113,7 +129,7 @@ description: Author BMS circuit diagrams for CANary SVG rendering.
 # BMS Diagram Author (session hint)
 
 Follow the main agent system prompt default workflow for every BMS design request.
-Read workspace `/bms/SKILL.md` + templates once, write `/bms/architecture.bms.json` and `/bms/safety_rules.yaml`, stop.
+Tigris wiki index + relevant pages first (automatic — users never say "read Tigris"), then `/bms/SKILL.md` + templates, write `/bms/architecture.bms.json` and `/bms/safety_rules.yaml`, stop.
 Users supply requirements only — never ask them to repeat workflow steps.
 Active workspace: `{workspace_hint}`
 """

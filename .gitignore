@@ -11,6 +11,7 @@ workspaces/default/*
 workspaces/default/bms/*
 !workspaces/default/bms/README.md
 !workspaces/default/bms/SKILL.md
+!workspaces/default/bms/WIKI.md
 !workspaces/default/bms/architecture.bms.json
 !workspaces/default/bms/safety_rules.yaml
 !workspaces/default/bms/schema/
