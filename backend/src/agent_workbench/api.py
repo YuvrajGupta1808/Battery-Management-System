@@ -7,6 +7,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .core.config import get_settings
@@ -27,6 +28,13 @@ def _maybe_mount_static(app: FastAPI) -> None:
     static_root = _static_dir(os.getenv("WORKBENCH_STATIC_DIR")) or _static_dir("apps/web/dist")
     if static_root is None:
         return
+    index_html = static_root / "index.html"
+
+    @app.get("/workbench", include_in_schema=False)
+    @app.get("/workbench/{_full_path:path}", include_in_schema=False)
+    async def spa_workbench(_full_path: str = "") -> FileResponse:
+        return FileResponse(index_html)
+
     app.mount("/", StaticFiles(directory=static_root, html=True), name="frontend")
 
 
